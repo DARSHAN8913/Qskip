@@ -1,3 +1,8 @@
 from django.shortcuts import render
+from rest_framework import viewsets
+from .models import BookingSlot
+from .serializers import BookingSlotSerializer
 
-# Create your views here.
+class BookingSlotViewSet(viewsets.ModelViewSet):
+    queryset = BookingSlot.objects.all()
+    serializer_class = BookingSlotSerializer

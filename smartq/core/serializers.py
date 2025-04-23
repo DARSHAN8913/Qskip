@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Place
+from .models import Place,Slot
 from .models import BookingSlot
 
 
@@ -20,3 +20,10 @@ class PlaceSerializer(serializers.ModelSerializer):
         if obj.image and hasattr(obj.image, 'url'):
             return request.build_absolute_uri(obj.image.url)
         return None
+
+class SlotSerializer(serializers.ModelSerializer):
+    place = PlaceSerializer(read_only=True)
+
+    class Meta:
+        model = Slot
+        fields = ['id', 'place', 'slot_id']

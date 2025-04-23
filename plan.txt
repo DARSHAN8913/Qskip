@@ -1,0 +1,16 @@
+apps:
+core
+parking
+
+Optional Future Ideas:
+If service_name is limited to known places (e.g., Passport Office, RTO, Temple), you might later replace it with a ForeignKey to a Place model.
+
+booking_status could evolve into choices (e.g., Pending, Confirmed, Canceled) — useful if you want to manage queue workflows later.
+
+Let me know if you want to:
+
+Automatically assign slot_id based on availability
+
+Prevent double-bookings
+
+Add uniqueness constraint (so same user can't double-book the same slot)

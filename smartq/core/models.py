@@ -9,3 +9,10 @@ class BookingSlot(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.service_name} @ {self.slot_time}"
+
+class Place(models.Model):
+    name = models.CharField(max_length=100)
+    image_url = models.URLField(max_length=300)
+
+    def __str__(self):
+        return self.name

@@ -1,0 +1,68 @@
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f9f9f9;
+    color: #333;
+}
+
+.navbar {
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 0.15rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar h1 {
+    font-size: 1.5rem;
+}
+
+.navbar nav a {
+    margin-left: 1rem;
+    text-decoration: none;
+    color: #444;
+    font-weight: 500;
+}
+
+.hero {
+    padding: 0.25rem;
+    text-align: center;
+    background: #e0f7fa;
+    border-bottom: 1px solid #ccc;
+}
+
+.places-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 2rem;
+}
+
+.place-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    transition: transform 0.2s;
+}
+
+.place-card:hover {
+    transform: translateY(-4px);
+}
+
+.place-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.place-card h3 {
+    margin: 0;
+    padding: 1rem;
+    font-size: 1.1rem;
+}
+
+.footer p {
+    text-align: center;
+}

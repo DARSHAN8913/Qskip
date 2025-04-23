@@ -12,7 +12,7 @@ class BookingSlot(models.Model):
 
 class Place(models.Model):
     name = models.CharField(max_length=100)
-    image_url = models.URLField(max_length=300)
+    image = models.ImageField(upload_to='place_logos/')
 
     def __str__(self):
         return self.name

@@ -1,0 +1,33 @@
+{% extends 'base1.html' %}
+
+
+{% block content %}
+<section class="hero">
+    <h2>Book Smarter, Not Harder</h2>
+    <p>Reserve your spot before even leaving home. Skip the queue!</p>
+</section>
+
+<section class="places-grid" id="places-list">
+    <!-- Filled dynamically by JS API call -->
+</section>
+<script>
+    fetch('/api/places/')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('places-list');
+            container.innerHTML = '';
+    
+            data.forEach(place => {
+                const card = document.createElement('div');
+                card.className = 'place-card';
+                card.innerHTML = `
+                    <img src="${place.image_url}" alt="${place.name}">
+                    <h3>${place.name}</h3>
+                `;
+                container.appendChild(card);
+            });
+        });
+    </script>
+{% endblock %}
+
+

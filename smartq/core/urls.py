@@ -8,6 +8,6 @@ router.register(r'places', PlaceViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('/places/', include(router.urls)),
+    # path('places/', include(router.urls)),
     
 ]

@@ -1,0 +1,21 @@
+ Option 1: Manual Reset (Quick & Clean)
+Stop the dev server (if running).
+
+Run these commands from the project root (where manage.py is):
+
+bash
+Copy
+Edit
+# Step 1: Delete DB file (for SQLite3)
+rm db.sqlite3
+
+# Step 2: Delete all migration files (except __init__.py)
+find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+find . -path "*/migrations/*.pyc"  -delete
+
+# Step 3: Recreate the DB
+python manage.py makemigrations
+python manage.py migrate
+
+# Step 4 (Optional): Create a superuser
+python manage.py createsuperuser

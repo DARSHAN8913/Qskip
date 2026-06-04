@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import db from "./models/db.js";
 import express from "express";
 import { schema } from "./models/auth.Model.js";
+import { importToRedis, initializeRedis, verifyRedisImport } from "./config/redis-init.js";
 
 
 dotenv.config({path:[ 
@@ -18,6 +19,9 @@ try {
     let conn=await db.getConnection();
     conn.release();
     await schema();
+    await initializeRedis();
+    await importToRedis();
+    await verifyRedisImport();
     console.log("✅ MySQL Database Connected Successfully");
 } catch (err) {
   console.error("❌ MySQL Connection Failed:", err);

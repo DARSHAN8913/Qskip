@@ -18,8 +18,9 @@ export async function initializeRedis() {
 }
 
 export const REDIS_KEYS = {
-    QUEUE_CONFIRMED: (id) => `qskip:queues:${id}:confirmed`,
-    QUEUE_WAITING: (id) => `qskip:queues:${id}:waiting`,
+    USER:(id)=>`qskip:user:${user.id}`,
+    QUEUE_CONFIRMED: (id) => `qskip:queue_entries _of_q${id}_is_confirmed`,
+    QUEUE_WAITING: (id) => `qskip:queue_entries _of_q${id}_is_waiting`,
     QUEUE_META: (id) => `qskip:queues:${id}:meta`
 };
 

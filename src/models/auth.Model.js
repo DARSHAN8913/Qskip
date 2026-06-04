@@ -26,11 +26,12 @@ export async function schema() {
     queue_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
 
-    status VARCHAR(20) DEFAULT 'AVAILABLE' ,
+    status VARCHAR(20) DEFAULT '' ,
 
-    position_no INT NOT NULL,
+    position_no INT DEFAULT NULL,
 
     booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    req_at TIMESTAMP DEFAULT NULL,
 
     FOREIGN KEY (queue_id) REFERENCES queues(id),
     FOREIGN KEY (user_id) REFERENCES users(id)

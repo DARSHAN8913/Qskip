@@ -21,6 +21,8 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}));
 app.use(cookieParser());
 
 // Router part:
+import { BookingRouter } from "./controllers/booking.Controller.js";
 
+app.use("/booking",BookingRouter);
 
 export default app;

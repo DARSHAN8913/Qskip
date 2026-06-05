@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Redis Explorer</title>
+
+<style>
+
+body {
+
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    font-family: Arial;
+
+}
+
+#left {
+
+    width: 35%;
+    overflow: auto;
+    border-right: 1px solid #ccc;
+    padding: 10px;
+
+}
+
+#right {
+
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+
+}
+
+ul {
+
+    list-style: none;
+    padding-left: 18px;
+
+}
+
+li {
+
+    cursor: pointer;
+    margin: 3px 0;
+
+}
+
+li:hover {
+
+    background: #f3f3f3;
+
+}
+
+pre {
+
+    white-space: pre-wrap;
+    word-break: break-word;
+
+}
+
+button {
+
+    margin-top: 10px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="left"></div>
+
+<div id="right">
+
+    <h2>Redis Explorer</h2>
+
+    <div id="details">
+        Select a key
+    </div>
+
+</div>
+
+<script>
+
+const API_BASE =
+    "http://localhost:5000/redis-explorer";
+
+
+
+loadTree();
+
+
+
+async function loadTree() {
+
+    const response =
+        await fetch(
+            `${API_BASE}/tree`
+        );
+
+    const json =
+        await response.json();
+
+    document
+        .getElementById(
+            "left"
+        )
+        .innerHTML = "";
+
+    renderNode(
+        json.data,
+        document.getElementById(
+            "left"
+        ),
+        []
+    );
+
+}
+
+
+
+function renderNode(
+    obj,
+    container,
+    path
+) {
+
+    const ul =
+        document.createElement(
+            "ul"
+        );
+
+    Object.keys(obj)
+        .sort()
+        .forEach(
+            key => {
+
+                const li =
+                    document.createElement(
+                        "li"
+                    );
+
+                li.textContent =
+                    key;
+
+                const nextPath =
+                    [
+                        ...path,
+                        key
+                    ];
+
+                const child =
+                    obj[key];
+
+                const hasChildren =
+                    Object.keys(
+                        child
+                    ).length > 0;
+
+                if (
+                    hasChildren
+                ) {
+
+                    li.onclick =
+                        e => {
+
+                            e.stopPropagation();
+
+                        };
+
+                    renderNode(
+                        child,
+                        li,
+                        nextPath
+                    );
+
+                } else {
+
+                    li.onclick =
+                        e => {
+
+                            e.stopPropagation();
+
+                            viewKey(
+                                nextPath.join(
+                                    ":"
+                                )
+                            );
+
+                        };
+
+                }
+
+                ul.appendChild(
+                    li
+                );
+
+            }
+        );
+
+    container.appendChild(
+        ul
+    );
+
+}
+
+
+
+async function viewKey(
+    key
+) {
+
+    const response =
+        await fetch(
+            `${API_BASE}/key?key=${encodeURIComponent(key)}`
+        );
+
+    const json =
+        await response.json();
+
+    document
+        .getElementById(
+            "details"
+        )
+        .innerHTML = `
+
+<h3>${json.data.key}</h3>
+
+<p>
+<b>Type:</b>
+${json.data.type}
+</p>
+
+<p>
+<b>TTL:</b>
+${json.data.ttl}
+</p>
+
+<pre>${JSON.stringify(
+    json.data.value,
+    null,
+    4
+)}</pre>
+
+<button onclick="deleteKey('${json.data.key}')">
+Delete Key
+</button>
+
+`;
+
+}
+
+
+
+async function deleteKey(
+    key
+) {
+
+    if (
+        !confirm(
+            `Delete ${key} ?`
+        )
+    ) {
+
+        return;
+
+    }
+
+    await fetch(
+        `${API_BASE}/key?key=${encodeURIComponent(key)}`,
+        {
+            method : "DELETE"
+        }
+    );
+
+    document
+        .getElementById(
+            "details"
+        )
+        .innerHTML =
+        "Deleted";
+
+    loadTree();
+
+}
+
+</script>
+
+</body>
+
+</html>

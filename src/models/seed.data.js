@@ -1,6 +1,6 @@
 import pool from "./db.js";
 
-export async function seedData() {
+export async function seedData_Mysql() {
 
     const [userCount] = await pool.execute(
         "SELECT COUNT(*) count FROM users"
@@ -48,4 +48,4 @@ export async function seedData() {
     }
 
 }
-await seedData();
+await seedData_Mysql();

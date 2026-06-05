@@ -1,0 +1,421 @@
+<!-- loadtest page -->
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>
+        Queue Load Tester
+    </title>
+
+    <style>
+
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric {
+            margin: 5px 0;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h2>
+        Queue Load Tester
+    </h2>
+
+    <div class="card">
+
+        <div>
+            RPS:
+            <span id="rpsValue">
+                100
+            </span>
+        </div>
+
+        <input
+            id="rpsSlider"
+            type="range"
+            min="1"
+            max="5000"
+            value="100"
+            style="width:500px"
+        >
+
+        <br><br>
+
+        <button id="startBtn">
+            Start
+        </button>
+
+        <button id="stopBtn">
+            Stop
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h3>
+            System Metrics
+        </h3>
+
+        <div
+            class="metric"
+            id="cpu"
+        ></div>
+
+        <div
+            class="metric"
+            id="ramUsed"
+        ></div>
+
+        <div
+            class="metric"
+            id="ramFree"
+        ></div>
+
+        <div
+            class="metric"
+            id="swapUsed"
+        ></div>
+
+        <div
+            class="metric"
+            id="cDrive"
+        ></div>
+
+        <div
+            class="metric"
+            id="dDrive"
+        ></div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>
+            Node Process
+        </h3>
+
+        <div
+            class="metric"
+            id="rssMB"
+        ></div>
+
+        <div
+            class="metric"
+            id="heapUsedMB"
+        ></div>
+
+        <div
+            class="metric"
+            id="heapTotalMB"
+        ></div>
+
+        <div
+            class="metric"
+            id="externalMB"
+        ></div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>
+            Redis Metrics
+        </h3>
+
+        <div
+            class="metric"
+            id="redisMemory"
+        ></div>
+
+        <div
+            class="metric"
+            id="confirmed"
+        ></div>
+
+        <div
+            class="metric"
+            id="waiting"
+        ></div>
+
+    </div>
+
+    <div class="card">
+
+        <h3>
+            Load State
+        </h3>
+
+        <div
+            class="metric"
+            id="sent"
+        ></div>
+
+        <div
+            class="metric"
+            id="success"
+        ></div>
+
+        <div
+            class="metric"
+            id="errors"
+        ></div>
+
+        <div
+            class="metric"
+            id="avgLatency"
+        ></div>
+
+        <div
+            class="metric"
+            id="running"
+        ></div>
+
+    </div>
+
+    <script>
+
+        const slider =
+            document.getElementById(
+                "rpsSlider"
+            );
+
+        const rpsValue =
+            document.getElementById(
+                "rpsValue"
+            );
+
+
+
+        slider.oninput =
+        async function() {
+
+            rpsValue.innerText =
+                slider.value;
+
+            await fetch(
+                "http://127.0.0.1:5000/api/loadtest/rps",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            rps:
+                                Number(
+                                    slider.value
+                                )
+                        })
+                }
+            );
+
+        };
+
+
+
+        document
+            .getElementById(
+                "startBtn"
+            )
+            .onclick =
+        async function() {
+
+            await fetch(
+                "http://127.0.0.1:5000/api/loadtest/start",
+                {
+                    method: "POST"
+                }
+            );
+
+        };
+
+
+
+        document
+            .getElementById(
+                "stopBtn"
+            )
+            .onclick =
+        async function() {
+
+            await fetch(
+                "http://127.0.0.1:5000/api/loadtest/stop",
+                {
+                    method: "POST"
+                }
+            );
+
+        };
+
+
+
+        async function refresh() {
+
+            const metrics =
+                await fetch(
+                    "http://127.0.0.1:5000/api/loadtest/metrics"
+                ).then(
+                    r => r.json()
+                );
+
+            const state =
+                await fetch(
+                    "http://127.0.0.1:5000/api/loadtest/state"
+                ).then(
+                    r => r.json()
+                );
+
+
+
+            /*
+            OLD METRICS
+
+            cpu.innerText =
+                "CPU: " +
+                metrics.cpuPercent +
+                "%";
+
+            ram.innerText =
+                "RAM: " +
+                metrics.memoryUsedMB +
+                " MB / " +
+                metrics.memoryTotalMB +
+                " MB";
+
+            diskRead.innerText =
+                "Disk Read: " +
+                metrics.diskReadMBps +
+                " MB/s";
+
+            diskWrite.innerText =
+                "Disk Write: " +
+                metrics.diskWriteMBps +
+                " MB/s";
+            */
+
+
+
+            cpu.innerText =
+                "CPU: " +
+                metrics.system.cpuPercent +
+                "%";
+
+            ramUsed.innerText =
+                "RAM Used: " +
+                metrics.system.memoryUsedMB +
+                " MB";
+
+            ramFree.innerText =
+                "RAM Free: " +
+                metrics.system.memoryFreeMB +
+                " MB";
+
+            swapUsed.innerText =
+                "Swap Used: " +
+                metrics.system.swapUsedMB +
+                " MB";
+
+            cDrive.innerText =
+                "C Drive: " +
+                metrics.disks.cDrivePercent +
+                "% Used";
+
+            dDrive.innerText =
+                "D Drive: " +
+                metrics.disks.dDrivePercent +
+                "% Used";
+
+
+
+            rssMB.innerText =
+                "RSS: " +
+                metrics.node.rssMB +
+                " MB";
+
+            heapUsedMB.innerText =
+                "Heap Used: " +
+                metrics.node.heapUsedMB +
+                " MB";
+
+            heapTotalMB.innerText =
+                "Heap Total: " +
+                metrics.node.heapTotalMB +
+                " MB";
+
+            externalMB.innerText =
+                "External: " +
+                metrics.node.externalMB +
+                " MB";
+
+
+
+            redisMemory.innerText =
+                "Redis Memory: " +
+                metrics.redis.memoryMB +
+                " MB";
+
+            confirmed.innerText =
+                "Confirmed: " +
+                metrics.redis.confirmed;
+
+            waiting.innerText =
+                "Waiting: " +
+                metrics.redis.waiting;
+
+
+
+            sent.innerText =
+                "Sent: " +
+                state.sent;
+
+            success.innerText =
+                "Success: " +
+                state.success;
+
+            errors.innerText =
+                "Errors: " +
+                state.errors;
+
+            avgLatency.innerText =
+                "Avg Latency: " +
+                state.avgLatency +
+                " ms";
+
+            running.innerText =
+                "Running: " +
+                state.running;
+
+        }
+
+
+
+        setInterval(
+            refresh,
+            1000
+        );
+
+        refresh();
+
+    </script>
+
+</body>
+
+</html>

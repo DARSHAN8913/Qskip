@@ -21,8 +21,13 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}));
 app.use(cookieParser());
 
 // Router part:
-import { BookingRouter } from "./controllers/booking.Controller.js";
 
+import { BookingRouter } from "./controllers/booking.Controller.js";
+import { RedisExplorerRouter } from "./controllers/redis-gui.js";
+import { LoadTestRouter } from "../tests/Performance.Controller.js";
+
+app.use( "/redis-explorer", RedisExplorerRouter );
 app.use("/booking",BookingRouter);
+app.use("/api/loadtest",LoadTestRouter)
 
 export default app;

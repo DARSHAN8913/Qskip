@@ -1,8 +1,9 @@
-import { insertQueueEntry } from "../models/booking.Model.js";
+import redis from "../config/redis.js";
+import { insertQueueEntry,flushConfirmedQueue} from "../models/booking.Model.js";
 import pool from "../models/db.js";
 import { bookUser } from "../utils/repo.js";
 import { Router } from "express";
-let FLUSH_MODE = "SYNC";
+let FLUSH_MODE = "ASYNC";
 
 const bookingBuffer = [];
 export let BookingRouter = Router();
@@ -11,23 +12,16 @@ BookingRouter.post("/book-one",book);
 export async function book(req, res) {
 
     try {
-
         const {
             queueId,
             userId,
             reqAt
-        } = req.body;
+        } = req.body??{};
+                const queue = await redis.hGetAll(
+            `qskip:queues:${queueId}`
+                                         );
 
-        const [queues] = await pool.execute(
-            `
-            SELECT capacity
-            FROM queues
-            WHERE id=?
-            `,
-            [queueId]
-        );
-
-        if (queues.length === 0) {
+        if (!queue || Object.keys(queue).length === 0) {
 
             return res.status(404).json({
                 success: false,
@@ -36,21 +30,57 @@ export async function book(req, res) {
 
         }
 
-        const capacity =
-            queues[0].capacity;
+        if (queue.is_active !== "1") {
+
+            return res.status(400).json({
+                success: false,
+                message: "Queue is inactive"
+            });
+
+        }
+
+        const capacity = Number(
+            queue.capacity
+        );
+        // const [queues] = await pool.execute(
+        //     `
+        //     SELECT capacity
+        //     FROM queues
+        //     WHERE id=?
+        //     `,
+        //     [queueId]
+        // );
+
+        // if (queues.length === 0) {
+
+        //     return res.status(404).json({
+        //         success: false,
+        //         message: "Queue not found"
+        //     });
+
+        // }
+
+        // const capacity =
+        //     queues[0].capacity;
 
         const bookingResult =
             await bookUser(
                 queueId,
                 userId,
-                capacity,
-                reqAt
-            );
+                capacity, reqAt );
 
         if (
-            bookingResult.status ===
-            "ALREADY_BOOKED"
-        ) {
+                FLUSH_MODE === "ASYNC" &&
+                bookingResult.status === "CONFIRMED" &&
+                bookingResult.positionNo === capacity
+            ) {
+
+    setImmediate( () => {
+        flushConfirmedQueue( queueId ).catch( console.error );
+    });
+
+}
+        if ( bookingResult.status === "ALREADY_BOOKED" ) {
 
             return res.status(409).json({
                 success: false,
@@ -71,11 +101,11 @@ export async function book(req, res) {
             reqAt
         };
 
-        if (FLUSH_MODE === "SYNC") {
+        // if (FLUSH_MODE === "SYNC") {
 
-            await insertQueueEntry(row);
+        //     await insertQueueEntry(row);
 
-        } 
+        // } 
 
         return res.status(200).json({
             success: true,

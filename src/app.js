@@ -29,5 +29,29 @@ import { LoadTestRouter } from "../tests/Performance.Controller.js";
 app.use( "/redis-explorer", RedisExplorerRouter );
 app.use("/booking",BookingRouter);
 app.use("/api/loadtest",LoadTestRouter)
+import client from "prom-client";
+
+const register =
+    new client.Registry();
+
+client.collectDefaultMetrics({
+    register
+});
+
+app.get(
+    "/metrics",
+    async ( req, res ) => {
+
+        res.set(
+            "Content-Type",
+            register.contentType
+        );
+
+        res.end(
+            await register.metrics()
+        );
+
+    }
+);
 
 export default app;

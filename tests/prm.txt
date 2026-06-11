@@ -1,0 +1,179 @@
+POST
+localhost:5000/booking/book-one
+
+Body
+raw (json)
+json
+{
+    "queueId":1,        // keep it fixed
+    "userId":3,             // 1-1000 users
+    "reqAt":1780644441000 // .now epoch timestamp
+}
+
+RPS=500 DURATION=20s k6 run \
+    --out json=tests\outputs\k6-result.json \
+    
+    {
+        Redis Explorer
+    qskip:queue_entries _of_q1_is_confirmed
+    Type: list
+
+    TTL: -1
+
+    [
+        "{\"user_id\":\"1\",\"position_no\":\"1\",\"booked_at\":\"1780985229157\",\"req_at\":\"1780985229154\"}",
+        "{\"user_id\":\"2\",\"position_no\":\"2\",\"booked_at\":\"1780985234149\",\"req_at\":\"1780985234149\"}",
+        "{\"user_id\":\"3\",\"position_no\":\"3\",\"booked_at\":\"1780985239149\",\"req_at\":\"1780985239149\"}",
+        "{\"user_id\":\"4\",\"position_no\":\"4\",\"booked_at\":\"1780985244149\",\"req_at\":\"1780985244149\"}",
+        "{\"user_id\":\"5\",\"position_no\":\"5\",\"booked_at\":\"1780985249150\",\"req_at\":\"1780985249149\"}",
+        "{\"user_id\":\"6\",\"position_no\":\"6\",\"booked_at\":\"1780985254149\",\"req_at\":\"1780985254149\"}",
+        "{\"user_id\":\"7\",\"position_no\":\"7\",\"booked_at\":\"1780985259150\",\"req_at\":\"1780985259149\"}",
+        "{\"user_id\":\"8\",\"position_no\":\"8\",\"booked_at\":\"1780985264150\",\"req_at\":\"1780985264149\"}",
+        "{\"user_id\":\"9\",\"position_no\":\"9\",\"booked_at\":\"1780985269149\",\"req_at\":\"1780985269149\"}",
+        "{\"user_id\":\"10\",\"position_no\":\"10\",\"booked_at\":\"1780985274150\",\"req_at\":\"1780985274149\"}",
+        "{\"user_id\":\"11\",\"position_no\":\"11\",\"booked_at\":\"1780985279149\",\"req_at\":\"1780985279149\"}",
+        "{\"user_id\":\"12\",\"position_no\":\"12\",\"booked_at\":\"1780985284150\",\"req_at\":\"1780985284150\"}",
+        "{\"user_id\":\"13\",\"position_no\":\"13\",\"booked_at\":\"1780985289150\",\"req_at\":\"1780985289150\"}",
+        "{\"user_id\":\"14\",\"position_no\":\"14\",\"booked_at\":\"1780985800323\",\"req_at\":\"1780985800324\"}",
+        "{\"user_id\":\"15\",\"position_no\":\"15\",\"booked_at\":\"1780985801323\",\"req_at\":\"1780985801325\"}",
+        "{\"user_id\":\"16\",\"position_no\":\"16\",\"booked_at\":\"1780985802323\",\"req_at\":\"1780985802325\"}",
+        "{\"user_id\":\"17\",\"position_no\":\"17\",\"booked_at\":\"1780985803323\",\"req_at\":\"1780985803324\"}",
+        "{\"user_id\":\"18\",\"position_no\":\"18\",\"booked_at\":\"1780985804323\",\"req_at\":\"1780985804324\"}",
+        "{\"user_id\":\"19\",\"position_no\":\"19\",\"booked_at\":\"1780985805323\",\"req_at\":\"1780985805324\"}",
+        "{\"user_id\":\"20\",\"position_no\":\"20\",\"booked_at\":\"1780985806324\",\"req_at\":\"1780985806325\"}",
+        "{\"user_id\":\"21\",\"position_no\":\"21\",\"booked_at\":\"1780988122348\",\"req_at\":\"1780988122348\"}"
+    ]
+    }
+also in result.json got this whats happening exactly 
+as i am unable to see a single booking in my mysql tables
+
+====================================================================================================================
+export async function bookUser(
+    queueId,
+    userId,
+    capacity,
+    reqAt
+) {
+
+    const bookedAt = Date.now();
+
+    const result = await redis.eval(
+        bookingLua,                         //const bookingLua = await fs.readFile(
+                                            //     path.resolve("src/utils/booking.lua"),
+                                            //     "utf8"
+                                            // );
+        {
+            keys: [
+                REDIS_KEYS.QUEUE_CONFIRMED(queueId),
+                REDIS_KEYS.QUEUE_WAITING(queueId)
+            ],
+            arguments: [
+                String(userId),
+                String(capacity),
+                String(reqAt),
+                String(bookedAt)
+            ]
+        }
+    );
+
+    return {
+        status: result[0],
+        positionNo: result[1]
+            ? Number(result[1])
+            : null,
+        bookedAt: result[2]
+            ? Number(result[2])
+            : null,
+        existingState: result[1] === "CONFIRMED" ||
+                       result[1] === "WAITING"
+            ? result[1]
+            : null
+    };
+}
+
+export async function upsertQueueEntries(rows) {
+
+    if (!rows.length) {
+        return;
+    }
+
+    const placeholders = [];
+    const params = [];
+
+    for (const row of rows) {
+
+        placeholders.push(
+            "(?,?,?,?,?,?)"
+        );
+
+        params.push(
+            row.queueId,
+            row.userId,
+            row.status,
+            row.positionNo,
+            new Date(Number(row.bookedAt)),
+            new Date(Number(row.reqAt))
+        );
+
+    }
+
+    await pool.execute(
+        `
+        INSERT INTO queue_entries
+        (
+            queue_id,
+            user_id,
+            status,
+            position_no,
+            booked_at,
+            req_at
+        )
+        VALUES
+        ${placeholders.join(",")}
+
+        ON DUPLICATE KEY UPDATE
+
+            status = VALUES(status),
+            position_no = VALUES(position_no),
+            booked_at = VALUES(booked_at),
+            req_at = VALUES(req_at)
+        `,
+        params
+    );
+
+}
+
+export async function flushConfirmedQueue( queueId ) {
+    
+    if ( flushState.get(queueId) )  return;
+
+    flushState.set( queueId, true );
+
+    try {
+        const entries = await redis.lRange( REDIS_KEYS.QUEUE_CONFIRMED( queueId ),0,  -1 );
+        
+        if ( entries.length === 0 )  return;
+
+        const rows = [];
+
+        for ( const item of entries ) {
+            const parsed = JSON.parse(item);
+            rows.push({
+                queueId,
+                userId: Number( parsed.user_id ),
+                status:"CONFIRMED",
+                positionNo: Number( parsed.position_no ),
+                bookedAt: Number( parsed.booked_at ),
+                reqAt: Number( parsed.req_at )
+            });
+
+        }
+
+        await upsertQueueEntries( rows );
+        console.log( `Queue ${queueId} flushed : ${rows.length}` );
+        
+    } finally {
+        flushState.delete( queueId );
+    }
+
+};

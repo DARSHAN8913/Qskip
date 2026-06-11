@@ -12,7 +12,10 @@ export async function bookUser(
     const bookedAt = Date.now();
 
     const result = await redis.eval(
-        bookingLua,
+        bookingLua,                         //const bookingLua = await fs.readFile(
+                                            //     path.resolve("src/utils/booking.lua"),
+                                            //     "utf8"
+                                            // );
         {
             keys: [
                 REDIS_KEYS.QUEUE_CONFIRMED(queueId),
